@@ -27,6 +27,7 @@ import os
 import cProfile
 import pstats
 import argparse
+import json
 from pathlib import Path
 from collections import defaultdict
 
@@ -123,6 +124,10 @@ def main():
                        help='Number of games to profile (default: 10)')
     parser.add_argument('-l', '--layout', default='defaultCapture',
                        help='Layout name (default: defaultCapture)')
+    parser.add_argument('--save', type=str, default=None,
+                       help='Save profiling results to JSON file for comparison')
+    parser.add_argument('--compare', type=str, default=None,
+                       help='Compare results with a previous profiling run (JSON file)')
     
     args = parser.parse_args()
     
@@ -214,7 +219,86 @@ def main():
     print(f"Avg score/game:  {total_score / args.num_games if args.num_games > 0 else 0:+.1f}")
     print("="*80)
     print()
-
+    
+    # Prepare data for saving
+    profiling_data = {
+        'bottlenecks': [{'name': name, 'cumtime': stats['cumtime'], 'calls': stats['calls']} 
+                       for name, stats in bottlenecks[:10]],
+        'summary': {
+            'total_games': args.num_games,
+            'total_moves': total_moves,
+            'total_score': total_score
+        }
+    }
+    
+    # Save results if requested
+    if args.save:
+        with open(args.save, 'w') as f:
+            json.dump(profiling_data, f, indent=2)
+        print(f"Results saved to: {args.save}")
+        print()
+    
+    # Compare with previous results if requested
+    if args.compare:
+        try:
+            with open(args.compare, 'r') as f:
+                baseline_data = json.load(f)
+            
+            print("="*80)
+            print("COMPARISON WITH BASELINE")
+            print("="*80)
+            
+            # Compare top bottlenecks
+            baseline_bottlenecks = {b['name']: b for b in baseline_data['bottlenecks']}
+            current_bottlenecks = {b['name']: b for b in profiling_data['bottlenecks']}
+            
+            print("\nFunction                       | Baseline   | Current    | Change")
+            print("-"*80)
+            
+            for current in profiling_data['bottlenecks'][:4]:
+                name = current['name']
+                current_time = current['cumtime']
+                
+                if name in baseline_bottlenecks:
+                    baseline_time = baseline_bottlenecks[name]['cumtime']
+                    diff = current_time - baseline_time
+                    pct = (diff / baseline_time * 100) if baseline_time > 0 else 0
+                    
+                    # Show improvement with color indication
+                    if diff < 0:
+                        change_str = f"{-diff:>7.4f}s ({pct:>6.1f}%) ✓ FASTER"
+                    else:
+                        change_str = f"+{diff:>6.4f}s ({pct:>6.1f}%) ✗ SLOWER"
+                    
+                    print(f"{name[:28]:<30} | {baseline_time:>8.4f}s | {current_time:>8.4f}s | {change_str}")
+                else:
+                    print(f"{name[:28]:<30} | {'N/A':>10} | {current_time:>8.4f}s | NEW FUNCTION")
+            
+            # Show top baseline bottlenecks that were eliminated or improved significantly
+            print("\nBaseline top functions status:")
+            print("-"*80)
+            for i, baseline in enumerate(baseline_data['bottlenecks'][:5], 1):
+                name = baseline['name']
+                baseline_time = baseline['cumtime']
+                
+                if name in current_bottlenecks:
+                    current_time = current_bottlenecks[name]['cumtime']
+                    diff = current_time - baseline_time
+                    pct = (diff / baseline_time * 100) if baseline_time > 0 else 0
+                    if diff < 0:
+                        change_str = f"↓ {-diff:.4f}s ({pct:.1f}%)"
+                    else:
+                        change_str = f"↑ +{diff:.4f}s ({pct:.1f}%)"
+                    print(f"{i}. {name[:28]:<30} | {baseline_time:>8.4f}s → {current_time:>8.4f}s | {change_str}")
+                else:
+                    print(f"{i}. {name[:28]:<30} | {baseline_time:>8.4f}s → ELIMINATED | ✓ REMOVED")
+            
+            print("="*80)
+        except FileNotFoundError:
+            print(f"Error: Comparison file not found: {args.compare}")
+        except json.JSONDecodeError:
+            print(f"Error: Invalid JSON in comparison file: {args.compare}")
+    
 
 if __name__ == '__main__':
     main()
