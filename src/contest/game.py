@@ -408,7 +408,8 @@ class GameStateData:
     def deep_copy(self):
         state = GameStateData(self)
         state.food = self.food.deep_copy()
-        state.layout = self.layout.deep_copy()
+        # Layout is immutable during gameplay, share reference instead of deep copying
+        state.layout = self.layout
         state._agent_moved = self._agent_moved
         state._food_eaten = self._food_eaten
         state._food_added = self._food_added
