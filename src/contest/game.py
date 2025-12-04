@@ -242,11 +242,11 @@ class Grid:
         return sum([x.count(item) for x in self.data])
 
     def as_list(self, key=True):
-        grid_list = []
-        for x in range(self.width):
-            for y in range(self.height):
-                if self[x][y] == key: grid_list.append((x, y))
-        return grid_list
+        # OPTIMIZATION: Use list comprehension with direct data access
+        # Avoids method call overhead of self[x][y] by accessing self.data directly
+        return [(x, y) for x in range(self.width) 
+                for y in range(self.height) 
+                if self.data[x][y] == key]
 
     def pack_bits(self):
         """
