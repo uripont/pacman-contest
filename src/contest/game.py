@@ -185,9 +185,12 @@ class Grid:
 
         self.width = width
         self.height = height
-        self.data = [[initial_value for _ in range(height)] for _ in range(width)]
+        # Optimization: Skip data creation if unpacking bits (will be overwritten anyway)
         if bit_representation:
+            self.data = [[False for _ in range(height)] for _ in range(width)]
             self._unpack_bits(bit_representation)
+        else:
+            self.data = [[initial_value for _ in range(height)] for _ in range(width)]
 
     def __getitem__(self, i):
         return self.data[i]
@@ -216,7 +219,11 @@ class Grid:
         return hash(h)
 
     def copy(self):
-        g = Grid(self.width, self.height)
+        # Optimization: Skip __init__ to avoid creating throwaway list
+        g = Grid.__new__(Grid)
+        g.width = self.width
+        g.height = self.height
+        g.CELLS_PER_INT = 30
         g.data = [x[:] for x in self.data]
         return g
 
@@ -224,7 +231,10 @@ class Grid:
         return self.copy()
 
     def shallow_copy(self):
-        g = Grid(self.width, self.height)
+        g = Grid.__new__(Grid)
+        g.width = self.width
+        g.height = self.height
+        g.CELLS_PER_INT = 30
         g.data = self.data
         return g
 
