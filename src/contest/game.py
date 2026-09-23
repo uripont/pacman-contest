@@ -185,12 +185,9 @@ class Grid:
 
         self.width = width
         self.height = height
-        # Optimization: Skip data creation if unpacking bits (will be overwritten anyway)
+        self.data = [[initial_value for _ in range(height)] for _ in range(width)]
         if bit_representation:
-            self.data = [[False for _ in range(height)] for _ in range(width)]
             self._unpack_bits(bit_representation)
-        else:
-            self.data = [[initial_value for _ in range(height)] for _ in range(width)]
 
     def __getitem__(self, i):
         return self.data[i]
