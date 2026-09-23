@@ -218,23 +218,24 @@ class Grid:
                 base *= 2
         return hash(h)
 
-    def copy(self):
-        # Optimization: Skip __init__ to avoid creating throwaway list
+    @staticmethod
+    def _from_data(width, height, data):
+        # Optimization: Skip __init__ so copies don't build a width x height
+        # list that would be overwritten immediately
         g = Grid.__new__(Grid)
-        g.width = self.width
-        g.height = self.height
-        g.data = [x[:] for x in self.data]
+        g.width = width
+        g.height = height
+        g.data = data
         return g
+
+    def copy(self):
+        return Grid._from_data(self.width, self.height, [x[:] for x in self.data])
 
     def deep_copy(self):
         return self.copy()
 
     def shallow_copy(self):
-        g = Grid.__new__(Grid)
-        g.width = self.width
-        g.height = self.height
-        g.data = self.data
-        return g
+        return Grid._from_data(self.width, self.height, self.data)
 
     def count(self, item=True):
         return sum([x.count(item) for x in self.data])
