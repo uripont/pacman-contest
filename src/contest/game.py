@@ -178,10 +178,10 @@ class Grid:
 
     The __str__ method constructs an output that is oriented like a pacman board.
     """
+    CELLS_PER_INT = 30
 
     def __init__(self, width, height, initial_value=False, bit_representation=None):
         if initial_value not in [False, True]: raise Exception('Grids can only contain booleans')
-        self.CELLS_PER_INT = 30
 
         self.width = width
         self.height = height
@@ -223,7 +223,6 @@ class Grid:
         g = Grid.__new__(Grid)
         g.width = self.width
         g.height = self.height
-        g.CELLS_PER_INT = 30
         g.data = [x[:] for x in self.data]
         return g
 
@@ -234,7 +233,6 @@ class Grid:
         g = Grid.__new__(Grid)
         g.width = self.width
         g.height = self.height
-        g.CELLS_PER_INT = 30
         g.data = self.data
         return g
 
